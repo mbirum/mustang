@@ -52,12 +52,20 @@ while True:
     if left_adjust > tolerance:
         # convert 16bit adc0 (0-65535) left knob read into 0-127 midi cc value
         pedal_value = remap_range(left_knob, 0, 65535, 0, 127)
+
+        #knobs are upside down so reverse the value
+        pedal_value = abs(pedal_value - 127)
+
         midi.send_cc_message(CC_EXPRESSION, 0, pedal_value)
         left_last_read = left_knob
 
     if right_adjust > tolerance:
         # convert 16bit adc0 (0-65535) right knob read into 0-127 midi cc value
         pedal_value = remap_range(right_knob, 0, 65535, 0, 127)
+
+        #knobs are upside down so reverse the value
+        pedal_value = abs(pedal_value - 127)
+        
         midi.send_cc_message(CC_EXPRESSION, 7, pedal_value)
         right_last_read = right_knob
 
