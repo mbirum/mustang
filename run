@@ -1,0 +1,1 @@
+exec -a mustang python3 /home/pi/mustang/mustang.py &
