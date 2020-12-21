@@ -14,7 +14,6 @@ def run_command(command):
 
 
 class MIDIInterface:
-    channel = 0
     device = ""
 
     def __init__(self):
@@ -29,9 +28,9 @@ class MIDIInterface:
         if error != "":
             print("No midi device available")
 
-    def send_cc_message(self, cc, value):
+    def send_cc_message(self, cc, channel, value):
         if self.device != "":
             cc_hex = hex(cc).split('x')[1]
             value_hex = hex(value).split('x')[1]
-            message = "B%s %s %s" % (self.channel, cc_hex, value_hex)
+            message = "B%s %s %s" % (channel, cc_hex, value_hex)
             run_command('amidi --port="%s" -S \'%s\'' % (self.device, message))

@@ -8,16 +8,8 @@ from adafruit_mcp3xxx.analog_in import AnalogIn
 from amidiw import MIDIInterface
 from amidiw import CC_ON
 
-# set midi cc codes
-CC_BUTTON_LEFT = 80
-CC_BUTTON_RIGHT = 81
+# set midi cc code
 CC_EXPRESSION = 11
-
-# set up pins for push buttons
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(12, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 # create the spi bus
 spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
@@ -30,14 +22,14 @@ mcp = MCP.MCP3008(spi, cs)
 
 # create an analog input channel on pin 0
 chan0 = AnalogIn(mcp, MCP.P0)
+chan7 = AnalogIn(mcp, MCP.P7)
 
 # create midi interface
 midi = MIDIInterface()
 
-last_read = 0
+left_last_read = 0
+right_last_read = 0
 tolerance = 250
-left_pressed = False
-right_pressed = False
 
 
 def remap_range(value, left_min, left_max, right_min, right_max):
@@ -49,35 +41,24 @@ def remap_range(value, left_min, left_max, right_min, right_max):
 
 while True:
 
-    if GPIO.input(12) == GPIO.HIGH:
-        if not left_pressed:
-            left_pressed = True
-            midi.send_cc_message(CC_BUTTON_LEFT, CC_ON)
-    else:
-        left_pressed = False
-        
-    if GPIO.input(18) == GPIO.HIGH:
-        if not right_pressed:
-            right_pressed = True
-            midi.send_cc_message(CC_BUTTON_RIGHT, CC_ON)
-    else:
-        right_pressed = False
-    
-    trim_pot_changed = False
-
     # read the analog pin
-    trim_pot = chan0.value
+    left_knob = chan0.value
+    right_knob = chan7.value
 
-    # how much has it changed since the last read
-    pot_adjust = abs(trim_pot - last_read)
+    # how much have they changed since the last read
+    left_adjust = abs(left_knob - left_last_read)
+    right_adjust = abs(right_knob - right_last_read)
 
-    if pot_adjust > tolerance:
-        trim_pot_changed = True
-
-    if trim_pot_changed:
-        # convert 16bit adc0 (0-65535) trim pot read into 0-127 midi cc value
-        pedal_value = remap_range(trim_pot, 0, 65535, 0, 127)
+    if left_adjust > tolerance:
+        # convert 16bit adc0 (0-65535) left knob read into 0-127 midi cc value
+        pedal_value = remap_range(left_knob, 0, 65535, 0, 127)
         midi.send_cc_message(CC_EXPRESSION, pedal_value)
-        last_read = trim_pot
+        left_last_read = left_knob
+
+    if right_adjust > tolerance:
+        # convert 16bit adc0 (0-65535) right knob read into 0-127 midi cc value
+        pedal_value = remap_range(right_knob, 0, 65535, 0, 127)
+        midi.send_cc_message(CC_EXPRESSION, pedal_value)
+        right_last_read = right_knob
 
     time.sleep(0.0001)
